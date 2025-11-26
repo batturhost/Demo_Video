@@ -16,7 +16,9 @@ window_y2 = window_y1 + window_height;
 
 // 3. Get Battle Type & Data
 current_level_cap = level_cap;
-if (is_casual == false) {
+
+// [FIX] Check if we have manual opponent data, even if it is casual (for scripted events)
+if (is_casual == false || opponent_data != noone) {
     current_opponent_data = opponent_data; 
     opponent_lose_message = current_opponent_data.lose_message;
 } else {
@@ -40,7 +42,7 @@ if (is_casual == false) {
 // 4. Define States
 enum BATTLE_STATE {
     START, WAIT_FOR_START, 
-    INTRO_PLAYER, WAIT_FOR_PLAYER_INTRO, // <--- ADD THESE TWO
+    INTRO_PLAYER, WAIT_FOR_PLAYER_INTRO, 
     PLAYER_TURN, PLAYER_MOVE_RUN,
     WAIT_FOR_PLAYER_MOVE, ENEMY_TURN, ENEMY_MOVE_RUN, WAIT_FOR_ENEMY_MOVE,
     PLAYER_POST_TURN_DAMAGE, ENEMY_POST_TURN_DAMAGE,
@@ -79,6 +81,11 @@ enemy_critter_data = new AnimalData(
     _enemy_db.blurb, _enemy_db.size, _enemy_db.element_type 
 );
 enemy_critter_data.nickname = _enemy_db.animal_name; 
+
+// [FIX] Pass the glitch flag to the specific critter instance
+if (variable_struct_exists(current_opponent_data, "is_glitched") && current_opponent_data.is_glitched) {
+    enemy_critter_data.is_glitched = true;
+}
 
 // Spawn Actors
 var _layer_id = layer_get_id("Instances");
@@ -152,6 +159,7 @@ download_bar_w = 400;
 download_bar_h = 30;
 download_filename = "";
 download_sprite = noone;
+
 download_bar_x1 = window_x1 + (window_width / 2) - (download_bar_w / 2);
 download_bar_y1 = window_y1 + (window_height / 2);
 
@@ -162,6 +170,10 @@ hp_drain_speed = 0.5;
 next_state_after_drain = BATTLE_STATE.WAIT_FOR_PLAYER_MOVE; 
 hp_blink_timer = 0;
 
+// ================== SCRIPTED BATTLE VARS ==================
+glitch_turn_count = 1;
+run_click_count = 0;
+
 // ================== CORE BATTLE LOGIC ==================
 perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_data, _move_index) {
     var _move = _user_data.moves[_move_index];
@@ -170,7 +182,18 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
     }
     
     battle_log_text = _user_data.nickname + " used " + _move.move_name + "!";
-    
+
+    // --- [SCRIPT] TURN 2: ICE POUNCE FAILURE ---
+    if (current_opponent_data.name == "0xUNKNOWN" && glitch_turn_count == 2 && _move.move_name == "Ice Pounce") {
+        effect_play_ice(_user_actor); 
+        effect_play_lunge(_user_actor, _target_actor);
+        
+        // [FIX] Replace text entirely to fit on screen
+        battle_log_text = "Error: Target reference not found.";
+        return; 
+    }
+    // -------------------------------------------
+
     switch (_move.move_type) {
         case MOVE_TYPE.DAMAGE:
             // Visuals
@@ -184,6 +207,11 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
             }
             else if (_move.move_name == "Playful Roll") {
                 effect_play_roll(_user_actor, _target_actor);
+            }
+            // [SCRIPT] OVERWRITE VISUALS
+            else if (_move.move_name == "OVERWRITE") {
+                 effect_play_lunge(_user_actor, _target_actor);
+                 effect_play_shockwave(_target_actor); 
             }
             else {
                 effect_play_lunge(_user_actor, _target_actor);
@@ -212,14 +240,39 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
             var A = _user_data.atk * _atk_mult; 
             var D = _target_data.defense * _def_mult;
             var P = _move.atk;
+            
+           // [KEEP CODE SAME UNTIL damage calculation inside switch]
+
             // Damage Formula
             var _damage = floor( ( ( ( (2 * L / 5) + 2 ) * P * (A / D) ) / 35 ) + 2 );
             _damage = floor(_damage * _type_mult);
             
+            // [FIX] OVERWRITE DAMAGE LOGIC
+            if (_move.move_name == "OVERWRITE") {
+                // If run count is >= 2, FATAL HIT (Kill)
+                if (variable_instance_exists(id, "run_click_count") && run_click_count >= 2) {
+                    _damage = _target_data.hp;
+                } 
+                else {
+                    // First hit: Non-fatal, reduces to 5%
+                    var _target_safe_hp = floor(_target_data.max_hp * 0.05);
+                    if (_target_safe_hp < 1) _target_safe_hp = 1;
+                    
+                    if (_target_data.hp > _target_safe_hp) {
+                        _damage = _target_data.hp - _target_safe_hp;
+                    } else {
+                        _damage = 0;
+                    }
+                }
+            }
+            
             _target_data.hp = max(0, _target_data.hp - _damage);
             effect_play_hurt(_target_actor);
+// [REST OF CODE]
+            
             if (_type_mult > 1.0) battle_log_text += " It's super effective!";
             if (_type_mult < 1.0) battle_log_text += " It's not very effective...";
+            
             if (_move.move_name == "Mud Shot") {
                 _target_data.spd_stage = clamp(_target_data.spd_stage - 1, -6, 6);
                 battle_log_text = "Mud Shot hit! Speed fell!"; 
@@ -228,7 +281,7 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
                 effect_play_poison(_target_actor);
             }
             break;
-            
+
         case MOVE_TYPE.HEAL:
             var _heal_amount = _move.effect_power;
             if (is_string(_heal_amount)) _heal_amount = real(_heal_amount); 
@@ -238,7 +291,7 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
             else effect_play_heal_flash(_user_actor);
             battle_log_text = _user_data.nickname + " healed!"; 
             break;
-            
+
         case MOVE_TYPE.STAT_DEBUFF:
             if (_move.move_name == "Hiss") { 
                  effect_play_angry(_user_actor);
@@ -264,43 +317,24 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
                 battle_log_text = _target_data.nickname + "'s defense fell!";
             }
             break;
-            
+
         case MOVE_TYPE.STAT_BUFF:
             if (_move == global.MOVE_SYSTEM_CALL) {
                 _target_data.glitch_timer = 3;
                 battle_log_text = _target_data.nickname + " is corrupting data!";
                 effect_play_hurt(_target_actor); 
             }
-            else if (_move.move_name == "Snow Cloak") { effect_play_snow(_user_actor);
-                battle_log_text = _user_data.nickname + " hid in the snow!"; } 
-            else if (_move.move_name == "Zen Barrier") { effect_play_zen(_user_actor);
-                battle_log_text = _user_data.nickname + " meditated! Defense rose!"; } 
-            else if (_move.move_name == "Wall Climb") { effect_play_up_arrow(_user_actor);
-                _user_data.spd_stage += 1; battle_log_text = _user_data.nickname + " climbed up! Speed rose!";
-            } 
-            else if (_move.move_name == "Tail Shed") { effect_play_tail_shed(_user_actor);
-                _user_data.def_stage += 2; battle_log_text = _user_data.nickname + " shed its tail! Defense rose sharply!";
-            } 
-            else if (_move.move_name == "Withdraw") { effect_play_shield(_user_actor);
-                _user_data.def_stage += 2; battle_log_text = _user_data.nickname + " withdrew! Defense rose sharply!";
-            } 
-            else if (_move.move_name == "Zoomies") { effect_play_zoomies(_user_actor);
-                _user_data.spd_stage += 2; battle_log_text = _user_data.nickname + " got the zoomies! Speed rose sharply!";
-            }
-            else if (_move.move_name == "Fluff Puff") { effect_play_puff(_user_actor);
-                _user_data.def_stage += 1; battle_log_text = _user_data.nickname + " puffed up! Defense rose!";
-            }
-            else if (_move.move_name == "Dust Bath") { effect_play_dust(_user_actor);
-                _user_data.def_stage += 1; battle_log_text = _user_data.nickname + " rolled in dust! Defense rose!";
-            }
-            else if (_move.move_name == "Coil") { effect_play_coil(_user_actor);
-                _user_data.atk_stage += 1; battle_log_text = _user_data.nickname + " coiled up! Attack rose!";
-            }
-            else if (_move.move_name == "Lazy Stance") { effect_play_lazy(_user_actor);
-                _user_data.def_stage += 1; battle_log_text = _user_data.nickname + " is slacking off! Defense rose!";
-            }
-            else { battle_log_text = _user_data.nickname + "'s stats rose!";
-            }
+            else if (_move.move_name == "Snow Cloak") { effect_play_snow(_user_actor); battle_log_text = _user_data.nickname + " hid in the snow!"; } 
+            else if (_move.move_name == "Zen Barrier") { effect_play_zen(_user_actor); battle_log_text = _user_data.nickname + " meditated! Defense rose!"; } 
+            else if (_move.move_name == "Wall Climb") { effect_play_up_arrow(_user_actor); _user_data.spd_stage += 1; battle_log_text = _user_data.nickname + " climbed up! Speed rose!"; } 
+            else if (_move.move_name == "Tail Shed") { effect_play_tail_shed(_user_actor); _user_data.def_stage += 2; battle_log_text = _user_data.nickname + " shed its tail! Defense rose sharply!"; } 
+            else if (_move.move_name == "Withdraw") { effect_play_shield(_user_actor); _user_data.def_stage += 2; battle_log_text = _user_data.nickname + " withdrew! Defense rose sharply!"; } 
+            else if (_move.move_name == "Zoomies") { effect_play_zoomies(_user_actor); _user_data.spd_stage += 2; battle_log_text = _user_data.nickname + " got the zoomies! Speed rose sharply!"; }
+            else if (_move.move_name == "Fluff Puff") { effect_play_puff(_user_actor); _user_data.def_stage += 1; battle_log_text = _user_data.nickname + " puffed up! Defense rose!"; }
+            else if (_move.move_name == "Dust Bath") { effect_play_dust(_user_actor); _user_data.def_stage += 1; battle_log_text = _user_data.nickname + " rolled in dust! Defense rose!"; }
+            else if (_move.move_name == "Coil") { effect_play_coil(_user_actor); _user_data.atk_stage += 1; battle_log_text = _user_data.nickname + " coiled up! Attack rose!"; }
+            else if (_move.move_name == "Lazy Stance") { effect_play_lazy(_user_actor); _user_data.def_stage += 1; battle_log_text = _user_data.nickname + " is slacking off! Defense rose!"; }
+            else { battle_log_text = _user_data.nickname + "'s stats rose!"; }
             break;
     }
 };
@@ -308,7 +342,7 @@ perform_turn_logic = function(_user_actor, _target_actor, _user_data, _target_da
 // ================== NEW: WEATHER VISUALS SETUP ==================
 weather_particles = [];
 weather_flash_alpha = 0; // For lightning
-sun_glow_timer = 0;      // For pulsing sun effect
+sun_glow_timer = 0; // For pulsing sun effect
 
 // [FIX] Capture dimensions in local variables to prevent struct scope issues
 var _win_w = window_width;

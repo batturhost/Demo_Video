@@ -7,7 +7,6 @@ event_inherited();
 // If the parent event destroyed us (clicked 'X'), the actors are gone.
 // We must stop execution immediately to prevent the crash.
 if (!instance_exists(player_actor) || !instance_exists(enemy_actor)) exit;
-
 // [FIX] RE-CALCULATE BOUNDS IMMEDIATELY
 window_x2 = window_x1 + window_width;
 window_y2 = window_y1 + window_height;
@@ -64,7 +63,6 @@ info_player_y2 = info_player_y1 + info_box_height;
 var _btn_w = 175; var _btn_h = 30; var _btn_gutter = 10;
 var _btn_base_x = window_x2 - (_btn_w * 2) - (_btn_gutter * 2);
 var _btn_base_y = _log_y1 + 15;
-
 btn_main_menu = [
     [_btn_base_x, _btn_base_y, _btn_base_x + _btn_w, _btn_base_y + _btn_h, "FIGHT"],
     [_btn_base_x + _btn_w + _btn_gutter, _btn_base_y, _btn_base_x + _btn_w * 2 + _btn_gutter, _btn_base_y + _btn_h, "TEAM"],
@@ -77,7 +75,6 @@ btn_team_layout = [];
 var _team_btn_w = 360; 
 var _team_btn_h = 100; 
 var _team_box_padding = 10;
-
 var _grid_total_w = (_team_btn_w * 2) + _team_box_padding;
 var _team_box_x_start = window_x1 + (window_width - _grid_total_w) / 2;
 var _team_box_y_start = window_y1 + 60;
@@ -122,7 +119,6 @@ if (is_dragging) _click = false;
 switch (current_state) {
     case BATTLE_STATE.START:
         battle_log_text = current_opponent_data.name + " sent out " + enemy_critter_data.nickname + "!";
-        
         // [SOUND] Play Enemy Cry
         play_critter_cry(enemy_critter_data);
         
@@ -133,11 +129,11 @@ switch (current_state) {
     // --- NEW CASE: PLAYER SENDS OUT CRITTER ---
     case BATTLE_STATE.INTRO_PLAYER:
         battle_log_text = "Go! " + player_critter_data.nickname + "!";
-        
         // [SOUND] Play Player Cry
         play_critter_cry(player_critter_data);
         
-        alarm[0] = 60; // Short delay before menu appears
+        alarm[0] = 60;
+        // Short delay before menu appears
         current_state = BATTLE_STATE.WAIT_FOR_PLAYER_INTRO;
         break;
 
@@ -186,7 +182,7 @@ switch (current_state) {
                 for (var i = 0; i < 4; i++) { 
                     var _btn = btn_main_menu[i];
                     if (point_in_box(_mx, _my, _btn[0], _btn[1], _btn[2], _btn[3])) { 
-                        menu_focus = i; 
+                        menu_focus = i;
                         if (_click) _key_enter = true;
                     } 
                 }
@@ -200,11 +196,29 @@ switch (current_state) {
                         case 1: current_menu = MENU.TEAM; menu_focus = 0; break;
                         case 2: battle_log_text = "Item select not implemented yet!"; break;
                         case 3: 
+                            // [SCRIPT] GLITCH RUN BUTTON
+                            if (current_opponent_data.name == "0xUNKNOWN" && glitch_turn_count >= 3) {
+                                run_click_count++;
+                                
+                                if (run_click_count == 1) {
+                                    // Morph text
+                                    btn_main_menu[3][4] = "#E4R$"; // Change label
+                                    if (audio_exists(snd_ui_click)) audio_play_sound(snd_ui_click, 10, false);
+                                } 
+                                else if (run_click_count == 2) {
+                                    btn_main_menu[3][4] = "N/A"; // Change label
+                                    if (audio_exists(snd_ui_click)) audio_play_sound(snd_ui_click, 10, false);
+                                }
+                                // Prevent running
+                                break;
+                            }
+                            
+                            // STANDARD RUN LOGIC
                             if (is_casual) { 
-                                battle_log_text = "You fled from the casual battle!"; 
+                                battle_log_text = "You fled from the casual battle!";
                                 current_state = BATTLE_STATE.LOSE;
                             } else { 
-                                battle_log_text = "You can't run from a ranked match!"; 
+                                battle_log_text = "You can't run from a ranked match!";
                             } 
                             break;
                     }
@@ -216,7 +230,7 @@ switch (current_state) {
                     if (i >= array_length(btn_move_menu)) break;
                     var _btn = btn_move_menu[i]; 
                     if (point_in_box(_mx, _my, _btn[0], _btn[1], _btn[2], _btn[3])) { 
-                        menu_focus = i; 
+                        menu_focus = i;
                         if (_click) _key_enter = true;
                     } 
                 }
@@ -224,7 +238,7 @@ switch (current_state) {
                 if (_key_enter) {
                     if (menu_focus == 3) { 
                         current_menu = MENU.MAIN;
-                        menu_focus = 0; 
+                        menu_focus = 0;
                     }
                     else if (menu_focus < array_length(player_critter_data.moves)) {
                         if (player_critter_data.move_pp[menu_focus] > 0) {
@@ -243,22 +257,23 @@ switch (current_state) {
                 for (var i = 0; i < _team_size; i++) { 
                     var _btn = btn_team_layout[i];
                     if (point_in_box(_mx, _my, _btn[0], _btn[1], _btn[2], _btn[3])) { 
-                        menu_focus = i; 
+                        menu_focus = i;
                         if (_click) _key_enter = true;
                     } 
                 }
                 var _cancel_btn = btn_team_layout[6];
                 if (point_in_box(_mx, _my, _cancel_btn[0], _cancel_btn[1], _cancel_btn[2], _cancel_btn[3])) { 
-                    menu_focus = 6; 
+                    menu_focus = 6;
                     if (_click) _key_enter = true;
                 }
                 
                 if (_key_enter) {
                     if (menu_focus == 6) {
                         if (is_force_swapping) { 
-                            battle_log_text = "You must choose a critter to continue!";
+                             battle_log_text = "You must choose a critter to continue!";
                         } else { 
-                            current_menu = MENU.MAIN; menu_focus = 0; 
+                            current_menu = MENU.MAIN;
+                            menu_focus = 0; 
                         }
                     } else if (menu_focus < _team_size) {
                         var _target_critter = global.PlayerData.team[menu_focus];
@@ -270,10 +285,8 @@ switch (current_state) {
                         }
                         else { 
                             swap_target_index = menu_focus;
-                            
                             // Determine if this swap counts as a turn
-                            swap_ends_turn = !is_force_swapping; 
-                            
+                            swap_ends_turn = !is_force_swapping;
                             current_state = BATTLE_STATE.PLAYER_SWAP_OUT; 
                             current_menu = MENU.MAIN; menu_focus = 0; is_force_swapping = false;
                         }
@@ -290,6 +303,39 @@ switch (current_state) {
         break;
         
     case BATTLE_STATE.ENEMY_TURN:
+        // --- [SCRIPT] GLITCH BATTLE ENEMY LOGIC ---
+        if (current_opponent_data.name == "0xUNKNOWN") {
+            
+            // TURN 1: Do Nothing / Glitch Text
+            if (glitch_turn_count == 1) {
+                battle_log_text = "0xUNKNOWN stares... 01001000 01000101 01001100 01010000";
+                // Skip move run state, just wait then go back to player
+                current_state = BATTLE_STATE.WAIT_FOR_ENEMY_MOVE;
+                alarm[0] = 120;
+                glitch_turn_count++; // Advance to Turn 2
+                break; // Stop here
+            }
+            
+            // TURN 2 & 3: USE "OVERWRITE"
+            else {
+                // Manually define the move since it doesn't exist in data
+                var _overwrite_move = new MoveData("OVERWRITE", 999, 100, "Deleting data.", "", MOVE_TYPE.DAMAGE, global.TYPE_TOXIC, 5, 0);
+                
+                // Easier approach: Add it to slot 0 temporarily
+                enemy_critter_data.moves[0] = _overwrite_move;
+                enemy_critter_data.move_pp[0] = 5;
+                enemy_chosen_move_index = 0;
+                
+                current_state = BATTLE_STATE.ENEMY_MOVE_RUN;
+                // Counter increment happens in POST_TURN_DAMAGE or manually here?
+                // Let's do it here to keep it simple.
+                glitch_turn_count++; 
+                break; 
+            }
+        }
+        // ------------------------------------------
+
+        // STANDARD LOGIC
         var _valid_moves = [];
         for (var m = 0; m < array_length(enemy_critter_data.moves); m++) { 
             if (enemy_critter_data.move_pp[m] > 0) array_push(_valid_moves, m);
@@ -325,7 +371,7 @@ switch (current_state) {
     
     case BATTLE_STATE.PLAYER_SWAP_IN: break;
 
-   case BATTLE_STATE.WIN_DOWNLOAD_PROGRESS:
+    case BATTLE_STATE.WIN_DOWNLOAD_PROGRESS:
         if (download_current_percent < download_end_percent) { 
             download_current_percent += 0.25;
         } 
@@ -357,21 +403,21 @@ switch (current_state) {
             }
         }
         break;
-        
+
     case BATTLE_STATE.WIN_DOWNLOAD_COMPLETE: break;
 
     case BATTLE_STATE.WIN_COIN_WAIT:
-        // Do nothing. Wait for Alarm 0.
+        // Do nothing.
         break;
 
     case BATTLE_STATE.WIN_END:
         if (mouse_check_button_pressed(mb_left) || keyboard_check_pressed(vk_enter)) {
             
             if (is_casual == false) { 
-                global.PlayerData.current_opponent_index++; 
+                global.PlayerData.current_opponent_index++;
             } 
             
-            instance_destroy(player_actor); 
+            instance_destroy(player_actor);
             instance_destroy(enemy_actor); 
             instance_destroy();
         }
@@ -396,10 +442,9 @@ switch (current_state) {
 
         if (player_visual_hp > player_critter_data.hp) player_visual_hp = max(player_critter_data.hp, player_visual_hp - _p_speed);
         else if (player_visual_hp < player_critter_data.hp) player_visual_hp = min(player_critter_data.hp, player_visual_hp + _p_speed);
-        
         if (enemy_visual_hp > enemy_critter_data.hp) enemy_visual_hp = max(enemy_critter_data.hp, enemy_visual_hp - _e_speed);
         else if (enemy_visual_hp < enemy_critter_data.hp) enemy_visual_hp = min(enemy_critter_data.hp, enemy_visual_hp + _e_speed);
-        
+
         if (abs(player_visual_hp - player_critter_data.hp) < 0.5 && abs(enemy_visual_hp - enemy_critter_data.hp) < 0.5) {
             player_visual_hp = player_critter_data.hp;
             enemy_visual_hp = enemy_critter_data.hp;
@@ -439,7 +484,7 @@ if (global.weather_condition == "RAIN" || global.weather_condition == "STORM") {
         _p.y += _p.speed;
         
         if (global.weather_condition == "STORM") _p.x -= 2;
-        
+
         if (_p.y > _sim_h) {
             _p.y = -_p.length;
             _p.x = irandom(_sim_w); 
@@ -468,7 +513,6 @@ if (global.weather_condition == "SNOW") {
         var _p = weather_particles[i];
         _p.y += _p.speed;
         _p.x += sin((current_time / 500) + _p.sway_offset) * 0.5;
-        
         if (_p.y > _sim_h) {
             _p.y = -5;
             _p.x = irandom(_sim_w); 

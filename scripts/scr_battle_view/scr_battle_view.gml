@@ -250,28 +250,69 @@ function draw_battle_actor(_actor, _data, _y_offset) {
     var _frame = _actor.animation_frame; var _alpha = _actor.faint_alpha;
     var _y_scale = _actor.faint_scale_y;
     
-    // --- REVERTED: Removed blinking logic to keep opacity 100% ---
-    // -----------------------------------------------------------
-    
     // Logic: Withdraw Fade
     if (_actor.vfx_type == "shield") _alpha *= 0.2;
+
     // Logic: Shadow
     draw_set_color(c_black); draw_set_alpha(0.3 * _alpha);
     var _shadow_w = sprite_get_width(_sprite) * _scale * 0.5;
     var _shadow_h = _shadow_w * 0.3;
     draw_ellipse(_x - _shadow_w, _y - _shadow_h, _x + _shadow_w, _y + _shadow_h, false);
     draw_set_alpha(1.0);
-    // Logic: Glitch vs Normal
-    if (_data.glitch_timer > 0) {
+
+    // [FIX] Logic: Glitch vs Normal
+    if (variable_struct_exists(_data, "is_glitched") && _data.is_glitched) {
+        // === PERMANENT GLITCH (MISSINGNO EFFECT) ===
+        var _sprite_w = sprite_get_width(_sprite);
+        var _sprite_h = sprite_get_height(_sprite);
+        var _g_w = _sprite_w * _scale;
+        var _g_h = _sprite_h * _scale;
+        var _draw_y = _y - _y_offset;
+        
+        // Draw 20 layers of "Garbage"
+        for (var k = 0; k < 20; k++) {
+            var _slice_w = irandom_range(4, 32);
+            var _slice_h = irandom_range(2, 16);
+            var _dx = _x - (_g_w/2) + irandom(_g_w);
+            var _dy = _draw_y - (_g_h/2) + irandom(_g_h);
+            
+            // Texture Scramble
+            var _sx = irandom(_sprite_w);
+            var _sy = irandom(_sprite_h);
+            var _stretch_x = choose(1, 2, -1, 0.5);
+            var _stretch_y = choose(1, 3, 0.2);
+            
+            draw_sprite_part_ext(_sprite, 0, _sx, _sy, _slice_w, _slice_h, _dx, _dy, _stretch_x, _stretch_y, c_white, 1);
+
+            // Raw Data Blocks (Black/Pink/Cyan)
+            if (irandom(3) == 0) {
+                var _col = choose(c_black, c_fuchsia, c_aqua);
+                draw_set_color(_col);
+                draw_set_alpha(random_range(0.5, 1.0));
+                draw_rectangle(_dx, _dy, _dx + _slice_w, _dy + _slice_h, false);
+                draw_set_alpha(1.0);
+            }
+        }
+        // Green Scanlines
+        repeat(3) {
+            var _ly = _draw_y - (_g_h/2) + irandom(_g_h);
+            draw_set_color(c_lime); 
+            draw_line(_x - _g_w, _ly, _x + _g_w, _ly);
+        }
+        draw_set_color(c_white); // Reset
+    }
+    else if (_data.glitch_timer > 0) {
+        // === TEMPORARY GLITCH (RED/CYAN SPLIT) ===
         var _shake_x = random_range(-2, 2);
         draw_sprite_ext(_sprite, _frame, _x - 3 + _shake_x, _y - _y_offset, _scale, _scale * _y_scale, 0, c_red, 0.5);
         draw_sprite_ext(_sprite, _frame, _x + 3 + _shake_x, _y - _y_offset, _scale, _scale * _y_scale, 0, c_aqua, 0.5);
         draw_sprite_ext(_sprite, _frame, _x + _shake_x, _y - _y_offset, _scale, _scale * _y_scale, 0, c_white, _alpha);
-    } else {
+    } 
+    else {
+        // === NORMAL DRAW ===
         var _rot = 0;
         if (_actor.vfx_type == "roll") {
-            var _rot_dir = (_actor.object_index == obj_player_critter) ?
-            -20 : 20;
+            var _rot_dir = (_actor.object_index == obj_player_critter) ? -20 : 20;
             _rot = _actor.vfx_timer * _rot_dir;
         }
         draw_sprite_ext(_sprite, _frame, _x, _y - _y_offset, _scale, _scale * _y_scale, _rot, c_white, _alpha);
@@ -301,7 +342,7 @@ function draw_battle_menu_buttons(_buttons, _focus_index, _pp_array = undefined)
         if (!is_undefined(_pp_array) && i < array_length(_pp_array)) {
              if (_btn[4] != "BACK" && _pp_array[i] <= 0) {
                  draw_set_color(c_gray);
-            }
+             }
         }
         
         var _btn_w = _btn[2] - _btn[0];

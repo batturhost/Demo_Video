@@ -31,7 +31,7 @@ switch (current_state) {
             }
         }
         break;
-        
+
     case BATTLE_STATE.WAIT_FOR_ENEMY_MOVE:
         if (player_critter_data.hp <= 0) {
             current_state = BATTLE_STATE.PLAYER_FAINT;
@@ -46,7 +46,7 @@ switch (current_state) {
             }
         }
         break;
-        
+
     case BATTLE_STATE.WAIT_FOR_FAINT:
         if (enemy_critter_data.hp <= 0) {
             if (is_casual) {
@@ -92,21 +92,17 @@ switch (current_state) {
             [_btn_base_x, _btn_base_y + _btn_h + _btn_gutter, _btn_base_x + _btn_w, _btn_base_y + _btn_h * 2 + _btn_gutter, player_critter_data.moves[2].move_name],
             [_btn_base_x + _btn_w + _btn_gutter, _btn_base_y + _btn_h + _btn_gutter, _btn_base_x + _btn_w * 2 + _btn_gutter, _btn_base_y + _btn_h * 2 + _btn_gutter, "BACK"]
         ];
-        
         var _layer_id = layer_get_id("Instances");
         var _px = window_x1 + (window_width * 0.3);
         var _py = window_y1 + (window_height * 0.7);
-        
         player_actor = instance_create_layer(_px, _py, _layer_id, obj_player_critter);
         init_animal(player_actor, player_critter_data, player_critter_data.sprite_idle_back);
         var _p_scale_mult = get_critter_scale_config(player_critter_data.animal_name, true);
         player_actor.my_scale = 0.33 * 1.30 * _p_scale_mult;
         
         battle_log_text = "Go! " + player_critter_data.nickname + "!";
-        
         // [SOUND] Play Cry on Swap
         play_critter_cry(player_critter_data);
-        
         // Check if swap ends turn
         if (variable_instance_exists(id, "swap_ends_turn") && swap_ends_turn) {
              current_state = BATTLE_STATE.ENEMY_TURN;
@@ -151,7 +147,7 @@ switch (current_state) {
             alarm[0] = 10;
         }
         break;
-        
+
     case BATTLE_STATE.WIN_LEVEL_UP_MSG:
         if (player_critter_data.level < 100 && player_critter_data.xp >= player_critter_data.next_level_xp) {
             current_state = BATTLE_STATE.WIN_CHECK_LEVEL;
@@ -161,7 +157,7 @@ switch (current_state) {
             alarm[0] = 30;
         }
         break;
-        
+
     case BATTLE_STATE.WIN_COIN_GAIN:
         var _coin_base = enemy_critter_data.level;
         var _coin_mult = is_casual ? 5 : 20;
@@ -172,7 +168,7 @@ switch (current_state) {
         current_state = BATTLE_STATE.WIN_COIN_WAIT;
         alarm[0] = 120; 
         break;
-        
+
     case BATTLE_STATE.WIN_COIN_WAIT:
         battle_log_text = "You won the battle! Click to continue.";
         current_state = BATTLE_STATE.WIN_END;
