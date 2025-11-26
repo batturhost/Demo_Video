@@ -4,9 +4,8 @@
 event_inherited();
 
 // [FIX] SAFETY CHECK
-// If the parent event destroyed us (clicked 'X'), the actors are gone.
-// We must stop execution immediately to prevent the crash.
 if (!instance_exists(player_actor) || !instance_exists(enemy_actor)) exit;
+
 // [FIX] RE-CALCULATE BOUNDS IMMEDIATELY
 window_x2 = window_x1 + window_width;
 window_y2 = window_y1 + window_height;
@@ -15,7 +14,6 @@ var _mx = device_mouse_x_to_gui(0);
 var _my = device_mouse_y_to_gui(0);
 var _click = mouse_check_button_pressed(mb_left);
 
-// --- PASTE THIS FIX HERE ---
 // [FIX] DEPTH CHECK: Is there a window ON TOP of us?
 var _is_covered = false;
 with (obj_window_parent) {
@@ -27,7 +25,6 @@ with (obj_window_parent) {
     }
 }
 if (_is_covered) _click = false;
-// ---------------------------
 
 // --- 2. RECALCULATE UI POSITIONS (Sticky UI) ---
 // Actor Home Positions
@@ -113,6 +110,15 @@ if (current_state == BATTLE_STATE.PLAYER_TURN && current_menu == MENU.FIGHT) {
 
 hp_blink_timer = (hp_blink_timer + 1) % 60;
 
+// --- NEW: COUNTDOWN GLITCH TIMERS ---
+// This ensures the glitch visual stops after the timer runs out
+if (variable_struct_exists(player_critter_data, "heavy_glitch_timer") && player_critter_data.heavy_glitch_timer > 0) {
+    player_critter_data.heavy_glitch_timer--;
+}
+if (variable_struct_exists(enemy_critter_data, "heavy_glitch_timer") && enemy_critter_data.heavy_glitch_timer > 0) {
+    enemy_critter_data.heavy_glitch_timer--;
+}
+
 // --- 4. Battle State Machine ---
 if (is_dragging) _click = false;
 
@@ -126,14 +132,12 @@ switch (current_state) {
         current_state = BATTLE_STATE.WAIT_FOR_START;
         break;
 
-    // --- NEW CASE: PLAYER SENDS OUT CRITTER ---
     case BATTLE_STATE.INTRO_PLAYER:
         battle_log_text = "Go! " + player_critter_data.nickname + "!";
         // [SOUND] Play Player Cry
         play_critter_cry(player_critter_data);
         
         alarm[0] = 60;
-        // Short delay before menu appears
         current_state = BATTLE_STATE.WAIT_FOR_PLAYER_INTRO;
         break;
 
@@ -201,7 +205,6 @@ switch (current_state) {
                                 run_click_count++;
                                 
                                 if (run_click_count == 1) {
-                                    // Morph text
                                     btn_main_menu[3][4] = "#E4R$"; // Change label
                                     if (audio_exists(snd_ui_click)) audio_play_sound(snd_ui_click, 10, false);
                                 } 
@@ -209,7 +212,6 @@ switch (current_state) {
                                     btn_main_menu[3][4] = "N/A"; // Change label
                                     if (audio_exists(snd_ui_click)) audio_play_sound(snd_ui_click, 10, false);
                                 }
-                                // Prevent running
                                 break;
                             }
                             
@@ -285,7 +287,6 @@ switch (current_state) {
                         }
                         else { 
                             swap_target_index = menu_focus;
-                            // Determine if this swap counts as a turn
                             swap_ends_turn = !is_force_swapping;
                             current_state = BATTLE_STATE.PLAYER_SWAP_OUT; 
                             current_menu = MENU.MAIN; menu_focus = 0; is_force_swapping = false;
@@ -306,36 +307,27 @@ switch (current_state) {
         // --- [SCRIPT] GLITCH BATTLE ENEMY LOGIC ---
         if (current_opponent_data.name == "0xUNKNOWN") {
             
-            // TURN 1: Do Nothing / Glitch Text
             if (glitch_turn_count == 1) {
                 battle_log_text = "0xUNKNOWN stares... 01001000 01000101 01001100 01010000";
-                // Skip move run state, just wait then go back to player
                 current_state = BATTLE_STATE.WAIT_FOR_ENEMY_MOVE;
                 alarm[0] = 120;
-                glitch_turn_count++; // Advance to Turn 2
-                break; // Stop here
+                glitch_turn_count++;
+                break;
             }
-            
-            // TURN 2 & 3: USE "OVERWRITE"
             else {
-                // Manually define the move since it doesn't exist in data
+                // TURN 2 & 3: USE "OVERWRITE"
                 var _overwrite_move = new MoveData("OVERWRITE", 999, 100, "Deleting data.", "", MOVE_TYPE.DAMAGE, global.TYPE_TOXIC, 5, 0);
                 
-                // Easier approach: Add it to slot 0 temporarily
                 enemy_critter_data.moves[0] = _overwrite_move;
                 enemy_critter_data.move_pp[0] = 5;
                 enemy_chosen_move_index = 0;
                 
                 current_state = BATTLE_STATE.ENEMY_MOVE_RUN;
-                // Counter increment happens in POST_TURN_DAMAGE or manually here?
-                // Let's do it here to keep it simple.
                 glitch_turn_count++; 
                 break; 
             }
         }
-        // ------------------------------------------
-
-        // STANDARD LOGIC
+        
         var _valid_moves = [];
         for (var m = 0; m < array_length(enemy_critter_data.moves); m++) { 
             if (enemy_critter_data.move_pp[m] > 0) array_push(_valid_moves, m);
@@ -351,6 +343,19 @@ switch (current_state) {
         break;
 
     case BATTLE_STATE.ENEMY_MOVE_RUN:
+        // --- NEW: TRIGGER GLITCH EFFECT ON PLAYER IF "OVERWRITE" IS USED ---
+        var _move_struct = enemy_critter_data.moves[enemy_chosen_move_index];
+        if (_move_struct.move_name == "OVERWRITE") {
+             // Set Timer for 1 second (60 frames)
+             player_critter_data.heavy_glitch_timer = 60; 
+             
+             if (audio_exists(snd_glitch_short)) {
+                 var _snd = audio_play_sound(snd_glitch_short, 10, false);
+                 audio_sound_pitch(_snd, 1.5);
+             }
+        }
+        // -------------------------------------------------------------------
+        
         perform_turn_logic(enemy_actor, player_actor, enemy_critter_data, player_critter_data, enemy_chosen_move_index);
         next_state_after_drain = BATTLE_STATE.WAIT_FOR_ENEMY_MOVE;
         current_state = BATTLE_STATE.WAIT_FOR_HP_DRAIN;
@@ -376,12 +381,10 @@ switch (current_state) {
             download_current_percent += 0.25;
         } 
         else {
-            // Download Finished
             download_current_percent = download_end_percent;
             current_state = BATTLE_STATE.WIN_DOWNLOAD_COMPLETE; 
             alarm[0] = 120; 
             
-            // [SOUND] Play download complete sound once
             audio_play_sound(snd_ui_download, 10, false);
 
             if (download_current_percent >= 100) {
@@ -396,7 +399,6 @@ switch (current_state) {
                 
                 array_push(global.PlayerData.pc_box, _new_critter); 
                 
-                // Mark as collected if tracking collection
                 if (variable_struct_exists(global.PlayerData, "collection_progress")) {
                     global.PlayerData.collection_progress[$ _key] = 1;
                 }
@@ -406,17 +408,13 @@ switch (current_state) {
 
     case BATTLE_STATE.WIN_DOWNLOAD_COMPLETE: break;
 
-    case BATTLE_STATE.WIN_COIN_WAIT:
-        // Do nothing.
-        break;
+    case BATTLE_STATE.WIN_COIN_WAIT: break;
 
     case BATTLE_STATE.WIN_END:
         if (mouse_check_button_pressed(mb_left) || keyboard_check_pressed(vk_enter)) {
-            
             if (is_casual == false) { 
                 global.PlayerData.current_opponent_index++;
             } 
-            
             instance_destroy(player_actor);
             instance_destroy(enemy_actor); 
             instance_destroy();
@@ -456,11 +454,9 @@ switch (current_state) {
     case BATTLE_STATE.LOSE:
         battle_log_text = player_critter_data.nickname + " fainted! You have lost the battle!";
         if (mouse_check_button_pressed(mb_left) || keyboard_check_pressed(vk_enter)) {
-            // Heal Team
             for (var i = 0; i < array_length(global.PlayerData.team); i++) {
                 global.PlayerData.team[i].hp = global.PlayerData.team[i].max_hp;
             }
-            
             instance_destroy(player_actor);
             instance_destroy(enemy_actor);
             instance_destroy();

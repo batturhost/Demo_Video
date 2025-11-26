@@ -252,7 +252,7 @@ function draw_battle_actor(_actor, _data, _y_offset) {
     
     // Logic: Withdraw Fade
     if (_actor.vfx_type == "shield") _alpha *= 0.2;
-
+    
     // Logic: Shadow
     draw_set_color(c_black); draw_set_alpha(0.3 * _alpha);
     var _shadow_w = sprite_get_width(_sprite) * _scale * 0.5;
@@ -260,9 +260,14 @@ function draw_battle_actor(_actor, _data, _y_offset) {
     draw_ellipse(_x - _shadow_w, _y - _shadow_h, _x + _shadow_w, _y + _shadow_h, false);
     draw_set_alpha(1.0);
 
-    // [FIX] Logic: Glitch vs Normal
-    if (variable_struct_exists(_data, "is_glitched") && _data.is_glitched) {
-        // === PERMANENT GLITCH (MISSINGNO EFFECT) ===
+    // --- UPDATED GLITCH CHECK ---
+    // Check if it's a permanent glitch enemy OR if the temporary glitch timer is active
+    var _is_heavy_glitch = false;
+    if (variable_struct_exists(_data, "is_glitched") && _data.is_glitched) _is_heavy_glitch = true;
+    if (variable_struct_exists(_data, "heavy_glitch_timer") && _data.heavy_glitch_timer > 0) _is_heavy_glitch = true;
+
+    if (_is_heavy_glitch) {
+        // === PERMANENT/HEAVY GLITCH (MISSINGNO EFFECT) ===
         var _sprite_w = sprite_get_width(_sprite);
         var _sprite_h = sprite_get_height(_sprite);
         var _g_w = _sprite_w * _scale;
@@ -281,9 +286,8 @@ function draw_battle_actor(_actor, _data, _y_offset) {
             var _sy = irandom(_sprite_h);
             var _stretch_x = choose(1, 2, -1, 0.5);
             var _stretch_y = choose(1, 3, 0.2);
-            
             draw_sprite_part_ext(_sprite, 0, _sx, _sy, _slice_w, _slice_h, _dx, _dy, _stretch_x, _stretch_y, c_white, 1);
-
+            
             // Raw Data Blocks (Black/Pink/Cyan)
             if (irandom(3) == 0) {
                 var _col = choose(c_black, c_fuchsia, c_aqua);
@@ -302,7 +306,7 @@ function draw_battle_actor(_actor, _data, _y_offset) {
         draw_set_color(c_white); // Reset
     }
     else if (_data.glitch_timer > 0) {
-        // === TEMPORARY GLITCH (RED/CYAN SPLIT) ===
+        // === TEMPORARY MINOR GLITCH (RED/CYAN SPLIT) ===
         var _shake_x = random_range(-2, 2);
         draw_sprite_ext(_sprite, _frame, _x - 3 + _shake_x, _y - _y_offset, _scale, _scale * _y_scale, 0, c_red, 0.5);
         draw_sprite_ext(_sprite, _frame, _x + 3 + _shake_x, _y - _y_offset, _scale, _scale * _y_scale, 0, c_aqua, 0.5);

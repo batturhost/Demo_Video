@@ -1,5 +1,24 @@
 // --- Step Event ---
 
+// --- NEW: GLITCH DOWNLOAD TIMER ---
+if (variable_global_exists("glitch_download_delay") && global.glitch_download_delay > 0) {
+    global.glitch_download_delay--;
+    
+    // When timer hits 1, trigger the download screen
+    if (global.glitch_download_delay == 1) {
+        
+        // 1. Setup the data for the Confirm Screen
+        // We hijack the "starter_key" variable because that's what rm_critter_confirm reads
+        global.PlayerData.starter_key = "snub_nosed_monkey";
+        
+        // 2. Set a flag so we know to make it GOLD
+        global.is_golden_event = true;
+        
+        // 3. Go to the room
+        room_goto(rm_critter_confirm);
+    }
+}
+
 var _mx = device_mouse_x_to_gui(0);
 var _my = device_mouse_y_to_gui(0);
 var _click = mouse_check_button_pressed(mb_left);

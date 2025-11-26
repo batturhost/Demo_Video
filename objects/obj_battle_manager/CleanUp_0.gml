@@ -25,3 +25,13 @@ if (variable_instance_exists(id, "player_actor") && instance_exists(player_actor
 if (variable_instance_exists(id, "enemy_actor") && instance_exists(enemy_actor)) {
     instance_destroy(enemy_actor);
 }	
+
+// --- NEW: TRIGGER GOLDEN DOWNLOAD ON EXIT ---
+// Check if we were fighting the Glitch Monkey
+if (variable_instance_exists(id, "current_opponent_data")) {
+    if (current_opponent_data.name == "0xUNKNOWN") {
+        // Set a global timer for 2 seconds (120 frames)
+        // The Hub Manager will read this.
+        global.glitch_download_delay = 120;
+    }
+}
