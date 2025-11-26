@@ -26,13 +26,24 @@ switch (download_state) {
             audio_play_sound(snd_ui_download, 10, false); 
         }
         break;
-        
+
     case "complete":
         btn_submit_hover = point_in_box(_mx, _my, btn_submit_x1, btn_submit_y1, btn_submit_x2, btn_submit_y2);
         
         if (_click && btn_submit_hover) {
             play_ui_click();
-            room_goto(rm_critter_rename);
+            
+            // --- NEW: REDIRECT FOR GOLDEN EVENT ---
+            if (variable_global_exists("is_golden_event") && global.is_golden_event) {
+                // Setup Stage 3: Return to Hub -> Wait 2s -> Trigger Message
+                global.glitch_event_stage = 3;
+                global.glitch_timer = 120;
+                room_goto(rm_hub);
+            } 
+            else {
+                // Standard Behavior
+                room_goto(rm_critter_rename);
+            }
         }
         break;
 }

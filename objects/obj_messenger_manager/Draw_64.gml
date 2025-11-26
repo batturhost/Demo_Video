@@ -24,7 +24,9 @@ var _xp_blue_dark = make_color_rgb(0, 80, 180);
 gpu_set_scissor(buddy_list_x + 2, buddy_list_y + 2, buddy_list_w - 4, buddy_list_h - 4);
 for (var i = 0; i < array_length(contact_list); i++) {
     var _y = buddy_list_y + 2 + (i * contact_item_height);
+    var _name = contact_list[i];
     
+    // Draw Selection Box
     if (i == selected_contact_index) {
         draw_set_color(_xp_blue_dark);
         draw_rectangle(buddy_list_x + 2, _y, buddy_list_x + buddy_list_w - 2, _y + contact_item_height, false);
@@ -32,7 +34,24 @@ for (var i = 0; i < array_length(contact_list); i++) {
     } else {
         draw_set_color(c_black);
     }
-    draw_text(buddy_list_x + 5, _y + 2, contact_list[i]);
+    
+    // Draw Name
+    draw_text(buddy_list_x + 5, _y + 2, _name);
+    
+    // --- NEW: DRAW ALERT ICON ---
+    if (variable_struct_exists(alerts, _name)) {
+        if (alert_blink_timer < 15) { // Blink effect
+            draw_set_color(c_red);
+            draw_set_font(fnt_vga_bold);
+            draw_set_halign(fa_right);
+            // Draw [!] on the right side of the buddy item
+            draw_text(buddy_list_x + buddy_list_w - 5, _y + 2, "[!]");
+            
+            // Reset settings
+            draw_set_font(fnt_vga);
+            draw_set_halign(fa_left);
+        }
+    }
 }
 gpu_set_scissor(0, 0, display_get_gui_width(), display_get_gui_height());
 
@@ -47,7 +66,7 @@ var _log = chat_logs[$ selected_contact_name];
 if (!is_undefined(_log)) {
     var _draw_y = chat_area_y + 5;
     
-    // --- UPDATED LOOP: DRAW ONLY VISIBLE MESSAGES ---
+    // --- UPDATED LOOP: USE VISIBLE COUNT ---
     var _count = min(visible_message_count, array_length(_log));
     
     for (var i = 0; i < _count; i++) {
@@ -62,21 +81,15 @@ if (!is_undefined(_log)) {
         draw_text(chat_area_x + 5, _draw_y, _sender + " says:");
         draw_set_font(fnt_vga); 
         
-        // Move down by the height of the sender line (approx 22px)
-        _draw_y += 22; 
+        _draw_y += 22; // Move down for body
         
         // Draw Message Body
         draw_set_color(c_black);
-        
-        // Calculate height dynamically based on width
         var _text_w = chat_area_w - 30; 
         var _height = draw_text_ext(chat_area_x + 10, _draw_y, _msg, msg_line_height, _text_w);
-        
-        // Safety check
         if (!is_real(_height)) _height = 20;
         
-        // [FIX] DYNAMIC SPACING
-        // Add height of the text block + 10px padding for the next message
+        // Dynamic Spacing
         _draw_y += _height + 10;
     }
 }

@@ -49,6 +49,7 @@ btn_send_hover = false;
 // 4. Chat Data
 chat_logs = {}; 
 contact_list = []; 
+alerts = {}; // --- NEW: Track which contacts have unread alerts
 
 array_push(contact_list, "System");
 chat_logs[$ "System"] = ["Welcome to CNet Messenger.", "No new alerts."];
@@ -61,6 +62,7 @@ chat_logs[$ "NetUser_01"] = [
     "Watch out for BronzeMod though. I heard his team is hacked."
 ];
 
+// 5. Process New Messages (Adds Skater_X)
 for (var i = 0; i < array_length(global.unread_messages); i++) {
     var _msg_obj = global.unread_messages[i];
     var _sender = _msg_obj.from;
@@ -71,8 +73,11 @@ for (var i = 0; i < array_length(global.unread_messages); i++) {
         array_push(contact_list, _sender);
     }
     array_push(chat_logs[$ _sender], _message);
+    
+    // --- NEW: Flag this contact as having an alert ---
+    alerts[$ _sender] = true;
 }
-global.unread_messages = []; // Clear global queue
+global.unread_messages = []; 
 
 selected_contact_index = 0;
 selected_contact_name = contact_list[0];
@@ -80,10 +85,15 @@ selected_contact_name = contact_list[0];
 contact_item_height = 24; 
 msg_line_height = 22; 
 
-// --- NEW: MESSAGE REVEAL LOGIC ---
+// --- NEW: MESSAGE REVEAL & DECAY LOGIC ---
 visible_message_count = 0; 
 message_reveal_timer = 30; 
 last_selected_index = -1; 
 
-// Flag to ensure we only spawn the glitch object once
+// Variables for the destruction sequence
 cliffhanger_triggered = false;
+decay_active = false;
+decay_timer = 0;
+
+// Blink timer for the UI alert
+alert_blink_timer = 0;

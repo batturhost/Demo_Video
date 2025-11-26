@@ -2,11 +2,22 @@
 
 // ==========================================================================================
 // FORCE DEBUG DATA: LEVEL 23 JIMMY + UNIQUE PC BOX
-// (We removed the 'if' check so this runs EVERY time, overwriting old saves)
 // ==========================================================================================
 
 if (!variable_global_exists("bestiary")) init_database();
 if (!variable_global_exists("CupDatabase")) init_cup_database();
+
+// --- NEW: EVENT STATE TRACKING ---
+// We use this to track the multi-room sequence (Battle -> Download -> Message)
+if (!variable_global_exists("glitch_event_stage")) {
+    global.glitch_event_stage = 0; 
+    // 0: None
+    // 1: Waiting for Download Screen
+    // 2: Inside Download Screen
+    // 3: Waiting for Message
+    // 4: Done
+    global.glitch_timer = 0;
+}
 
 global.PlayerData = {
     name: "DEBUG_USER", gender: 0,
@@ -14,7 +25,7 @@ global.PlayerData = {
     current_cup_index: 0, current_opponent_index: 0,
     team: [], pc_box: [], collection_progress: {},
     starter_key: "arctic_fox", starter_name: "Arctic Fox", 
-    starter_nickname: "Jimmy", // <--- The specific name you wanted
+    starter_nickname: "Jimmy", 
     coins: 1800, 
     inventory: []
 };
@@ -25,7 +36,7 @@ var _starter_critter = new AnimalData(
     _starter_data.animal_name,
     _starter_data.base_hp, _starter_data.base_atk,
     _starter_data.base_def, _starter_data.base_spd,
-    23, // <--- Level 23
+    23, 
     _starter_data.sprite_idle, _starter_data.sprite_idle_back,
     _starter_data.sprite_signature_move, _starter_data.moves,
     _starter_data.blurb, _starter_data.size, _starter_data.element_type
@@ -37,7 +48,7 @@ array_push(global.PlayerData.team, _starter_critter);
 // --- 2. CREATE PC BOX (Unique & Similar Levels) ---
 var _all_keys = variable_struct_get_names(global.bestiary);
 
-// Remove 'arctic_fox' from the pool so we don't get a duplicate of Jimmy
+// Remove 'arctic_fox' from the pool
 var _f_idx = -1;
 for (var k=0; k<array_length(_all_keys); k++) {
     if (_all_keys[k] == "arctic_fox") { _f_idx = k; break; }
@@ -48,14 +59,11 @@ if (_f_idx != -1) array_delete(_all_keys, _f_idx, 1);
 for (var i = 0; i < 5; i++) {
     if (array_length(_all_keys) == 0) break; 
 
-    // Pick random key and REMOVE it to ensure uniqueness
     var _rand_index = irandom(array_length(_all_keys) - 1);
     var _key = _all_keys[_rand_index];
     array_delete(_all_keys, _rand_index, 1); 
 
     var _db = global.bestiary[$ _key];
-    
-    // Levels 21-25 to match Jimmy
     var _lvl = irandom_range(21, 25); 
     
     var _c = new AnimalData(
@@ -73,14 +81,12 @@ for (var i = 0; i < 5; i++) {
 global.tutorial_complete = true;
 
 // ==========================================================================================
-// STANDARD HUB SETUP (Clock, Menu, Icons)
+// STANDARD HUB SETUP
 // ==========================================================================================
 
-// 1. Clock Setup
 time_string = "";
 alarm[0] = 60;
 
-// 2. Start Menu & Taskbar Vars
 start_menu_open = false;
 start_hover_index = -1;
 
@@ -98,7 +104,6 @@ menu_items = [
     ["Shut Down...", "shutdown"]
 ];
 
-// Taskbar Apps List
 applications_list = [
     [obj_browser_manager, "Browser"],
     [obj_pokedex_manager, "Bestiary"],
@@ -110,7 +115,6 @@ applications_list = [
 
 global.top_window_depth = -100;
 
-// 3. Icon Auto-Alignment System
 var _icon_x = 32;
 var _start_y = 32;
 var _spacing_y = 96; 
@@ -120,14 +124,11 @@ if (instance_exists(obj_icon_bestiary)) { obj_icon_bestiary.x = _icon_x; obj_ico
 if (instance_exists(obj_pc_icon)) { obj_pc_icon.x = _icon_x; obj_pc_icon.y = _start_y + (2 * _spacing_y); }
 if (instance_exists(obj_messenger_icon)) { obj_messenger_icon.x = _icon_x; obj_messenger_icon.y = _start_y + (3 * _spacing_y); }
 
-// Slot 5: C-Store
 if (!instance_exists(obj_store_icon)) instance_create_layer(0, 0, "Instances", obj_store_icon);
 if (instance_exists(obj_store_icon)) { obj_store_icon.x = _icon_x; obj_store_icon.y = _start_y + (4 * _spacing_y); }
 
-// 4. Demo Vars
 global.demo_browser_open_count = 0;
 
-// Clean up Debug Flag
 if (variable_global_exists("open_debug_battle") && global.open_debug_battle) {
     global.open_debug_battle = false;
     if (!instance_exists(obj_debug_battle_setup)) instance_create_layer(0, 0, "Instances", obj_debug_battle_setup);

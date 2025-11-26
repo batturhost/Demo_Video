@@ -1,71 +1,52 @@
 // --- Step Event ---
 
-// --- GLITCH EVENT: THE LATE WARNING ---
-if (variable_global_exists("glitch_download_delay") && global.glitch_download_delay > 0) {
-    global.glitch_download_delay--;
-    
-    // When timer hits 1 (approx 2 seconds after battle close)
-    if (global.glitch_download_delay == 1) {
-        
-        // 1. Inject "Too Late" Messages from a NEW CONTACT
-        if (!variable_global_exists("unread_messages")) global.unread_messages = [];
-        
-        // Clear old messages to focus on these
-        global.unread_messages = [];
-
-        // 90s Screenname: Skater_X
-        array_push(global.unread_messages, { 
-            from: "Skater_X", 
-            message: "Yo! Are you online?" 
-        });
-        array_push(global.unread_messages, { 
-            from: "Skater_X", 
-            message: "DONT click that popup ad on browser!" 
-        });
-        array_push(global.unread_messages, { 
-            from: "Skater_X", 
-            message: "It's not real. It's a virus." 
-        });
-        array_push(global.unread_messages, { 
-            from: "Skater_X", 
-            message: "It overwrites your whole save file!!" 
-        });
-        array_push(global.unread_messages, { 
-            from: "Skater_X", 
-            message: "Dude? You there?" 
-        });
-
-        // 2. Play normal notification sound (It's just a friend messaging you)
-        if (audio_exists(snd_ui_chime)) {
-            audio_play_sound(snd_ui_chime, 10, false);
-        }
-        
-        // 3. Force the Icon to Blink
-        if (instance_exists(obj_messenger_icon)) {
-            obj_messenger_icon.visible = true;
-            obj_messenger_icon.is_blinking = true;
-        }
-    }
+// --- EVENT SEQUENCE LOGIC ---
+if (variable_global_exists("glitch_timer") && global.glitch_timer > 0) {
+    global.glitch_timer--;
 }
 
-// --- NEW: GLITCH DOWNLOAD TIMER ---
-if (variable_global_exists("glitch_download_delay") && global.glitch_download_delay > 0) {
-    global.glitch_download_delay--;
+// STAGE 1: BATTLE ENDED -> WAITING TO DOWNLOAD
+if (global.glitch_event_stage == 1 && global.glitch_timer <= 0) {
     
-    // When timer hits 1, trigger the download screen
-    if (global.glitch_download_delay == 1) {
-        
-        // 1. Setup the data for the Confirm Screen
-        // We hijack the "starter_key" variable because that's what rm_critter_confirm reads
-        global.PlayerData.starter_key = "snub_nosed_monkey";
-        
-        // 2. Set a flag so we know to make it GOLD
-        global.is_golden_event = true;
-        
-        // 3. Go to the room
-        room_goto(rm_critter_confirm);
-    }
+    // Trigger the Download Screen
+    global.PlayerData.starter_key = "snub_nosed_monkey";
+    global.is_golden_event = true;
+    
+    room_goto(rm_critter_confirm);
+    
+    // Advance state to 2 (We are now 'In Download')
+    global.glitch_event_stage = 2; 
 }
+
+// STAGE 3: DOWNLOAD FINISHED -> WAITING FOR MESSAGE
+if (global.glitch_event_stage == 3 && global.glitch_timer <= 0) {
+    
+    // Inject Skater_X Messages
+    if (!variable_global_exists("unread_messages")) global.unread_messages = [];
+    global.unread_messages = [];
+
+    array_push(global.unread_messages, { from: "Skater_X", message: "Yo! Are you online?" });
+    array_push(global.unread_messages, { from: "Skater_X", message: "Whatever you do, DONT click that popup" });
+    array_push(global.unread_messages, { from: "Skater_X", message: "It's not a real critter. It's a virus." });
+    array_push(global.unread_messages, { from: "Skater_X", message: "It overwrites your whole save file!!" });
+    array_push(global.unread_messages, { from: "Skater_X", message: "Dude? You there?" });
+
+    // Play Sound
+    if (audio_exists(snd_ui_chime)) {
+        audio_play_sound(snd_ui_chime, 10, false);
+    }
+    
+    // Blink Icon
+    if (instance_exists(obj_messenger_icon)) {
+        obj_messenger_icon.visible = true;
+        obj_messenger_icon.is_blinking = true;
+    }
+    
+    // Event Done
+    global.glitch_event_stage = 4;
+}
+// ------------------------------------------
+
 
 var _mx = device_mouse_x_to_gui(0);
 var _my = device_mouse_y_to_gui(0);
@@ -97,26 +78,24 @@ if (_click && !start_menu_open) {
     var _task_x = _btn_x2 + 10;
     var _task_w = 120;
     var _task_h = 24;
-    var _task_y = _btn_y1; 
-
+    var _task_y = _btn_y1;
+    
     for (var i = 0; i < array_length(applications_list); i++) {
         var _obj = applications_list[i][0];
         
         if (instance_exists(_obj)) {
             if (point_in_box(_mx, _my, _task_x, _task_y, _task_x + _task_w, _task_y + _task_h)) {
-                // HIT! 
+                // HIT!
                 with (_obj) {
                     // --- NEW LOGIC: RESTORE IF MINIMIZED ---
                     if (variable_instance_exists(id, "is_minimized") && is_minimized) {
                         anim_state = 4; // RESTORE Animation
                         anim_timer = 0;
-                        // Set task_target to this button's position for cool effect
                         task_target_x = _task_x;
                         task_target_y = _task_y;
                     }
-                    // ---------------------------------------
                     
-                    global.top_window_depth -= 1; 
+                    global.top_window_depth -= 1;
                     depth = global.top_window_depth; 
                 }
             }
@@ -127,7 +106,7 @@ if (_click && !start_menu_open) {
 
 // 3. Define Menu Area
 var _menu_x1 = 2;
-var _menu_y2 = _gui_h - 32; 
+var _menu_y2 = _gui_h - 32;
 var _menu_y1 = _menu_y2 - menu_h;
 var _menu_x2 = _menu_x1 + menu_w;
 
@@ -141,7 +120,6 @@ else if (start_menu_open) {
     
     // Check Hover
     start_hover_index = -1;
-    
     var _list_x1 = _menu_x1 + 30; 
     if (point_in_box(_mx, _my, _list_x1, _menu_y1, _menu_x2, _menu_y2)) {
         var _list_start_y = _menu_y1 + 10;
@@ -163,9 +141,8 @@ else if (start_menu_open) {
 			
 			// [FIX] BATTLE LOCK CHECK
             if (instance_exists(obj_battle_manager) && (_action == "pc" || _action == "store" || _action == "browser")) {
-                // Optional: Play an error sound here
                 start_menu_open = false;
-                exit; // Stop execution
+                exit; 
             }
             
             switch (_action) {
@@ -184,21 +161,20 @@ else if (start_menu_open) {
                 case "messenger":
                     if (!instance_exists(obj_messenger_manager)) instance_create_layer(0, 0, "Instances", obj_messenger_manager);
                     else with(obj_messenger_manager) { global.top_window_depth--; depth = global.top_window_depth; }
-                    if (instance_exists(obj_messenger_icon)) { obj_messenger_icon.is_blinking = false; obj_messenger_icon.blink_timer = 0; }
+                    if (instance_exists(obj_messenger_icon)) { obj_messenger_icon.is_blinking = false;
+                    obj_messenger_icon.blink_timer = 0; }
                     break;
-			    case "save":
+                case "save":
                     save_game();
-                    // Optional: You could play a sound or show a popup here
                     start_menu_open = false;
                     break;
                 case "shutdown":
                     game_end();
                     break;
             }
-            start_menu_open = false; // Close after click
+            start_menu_open = false;
         } 
         else {
-            // Clicked outside menu (and not on start button) -> Close
             start_menu_open = false;
         }
     }

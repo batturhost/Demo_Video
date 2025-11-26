@@ -39,9 +39,17 @@ if (_click && !is_dragging) {
         if (_idx >= 0 && _idx < array_length(contact_list)) {
             selected_contact_index = _idx;
             selected_contact_name = contact_list[_idx];
+            
+            // --- NEW: CLEAR ALERT ON CLICK ---
+            if (variable_struct_exists(alerts, selected_contact_name)) {
+                variable_struct_remove(alerts, selected_contact_name);
+            }
         }
     }
 }
+
+// Update Alert Blink
+alert_blink_timer = (alert_blink_timer + 1) % 30; // Fast blink
 
 // --- NEW: MESSAGE REVEAL ANIMATION ---
 // 1. Reset if we switched contacts
@@ -70,17 +78,14 @@ if (!is_undefined(_current_log)) {
                 audio_sound_pitch(_snd, 1.0 + (visible_message_count * 0.05)); 
             }
             
-            // --- NEW: TRIGGER CLIFFHANGER ---
-            // If this was the LAST message from Skater_X, start the ending sequence
+            // --- NEW: CLIFFHANGER SEQUENCE ---
+            // If this was the LAST message from Skater_X
             if (selected_contact_name == "Skater_X" && visible_message_count == _total_msgs && !cliffhanger_triggered) {
                  
                  cliffhanger_triggered = true;
                  
-                 // Create the Glitch Effect Controller at Depth 200
-                 // (Behind Icons @ 100/0, but In Front of Background @ 300)
                  instance_create_depth(0, 0, 200, obj_glitch_effect);
                  
-                 // Hide the original background layer so our black void shows
                  var _lay_id = layer_get_id("Background");
                  if (layer_exists(_lay_id)) {
                      layer_set_visible(_lay_id, false);
