@@ -1,21 +1,10 @@
 // --- Create Event ---
 
-// --- Create Event ---
-
 // =================================================================
 // DEV TOGGLE: SAVE SYSTEM
-// Set to FALSE to force the game to always start at the Installer.
-// Set to TRUE for normal gameplay (Load save if exists).
 global.ENABLE_SAVE_SYSTEM = true; 
 // =================================================================
 
-init_database(); 
-init_cup_database(); 
-randomize();
-
-// ... (Rest of your existing Create Event code) ...
-
-// --- Create Event ---
 init_database(); 
 init_cup_database(); 
 randomize();
@@ -24,12 +13,9 @@ randomize();
 global.bargain_offered = false; 
 global.unread_messages = []; 
 global.trapdoor_unlocked = false;
+global.dragged_window = noone; 
 
-// ================== NEW GLOBAL LOCK ==================
-global.dragged_window = noone; // Stores the ID of the window currently being dragged
-// =====================================================
-
-draw_set_font(fnt_vga); 
+draw_set_font(fnt_vga);
 current_line = 0; 
 text_speed = 45; 
 
@@ -48,22 +34,21 @@ text_lines = [
 
 alarm[0] = text_speed; 
 
-// --- BUTTONS ---
-btn_x1 = 20;
-btn_y1 = 20 + (array_length(text_lines) * 20) + 20;
-btn_w = 220;
-btn_h = 30;
-btn_x2 = btn_x1 + btn_w;
-btn_y2 = btn_y1 + btn_h;
-btn_hovering = false;
+// --- NEW BUTTON: REBOOT ---
+// Positioned near the bottom
+btn_reboot_w = 160;
+btn_reboot_h = 30;
+btn_reboot_x1 = 20;
+btn_reboot_y1 = 20 + (array_length(text_lines) * 20) + 40; // Below text
+btn_reboot_x2 = btn_reboot_x1 + btn_reboot_w;
+btn_reboot_y2 = btn_reboot_y1 + btn_reboot_h;
+btn_reboot_hover = false;
 
-btn_continue_x1 = btn_x2 + 10;
-btn_continue_y1 = btn_y1;
-btn_continue_w = 120;
-btn_continue_h = 30;
-btn_continue_x2 = btn_continue_x1 + btn_continue_w;
-btn_continue_y2 = btn_continue_y1 + btn_continue_h;
-btn_continue_hovering = false;
+// --- AUTO-START TIMER ---
+// How long to wait on "Ready." before going to Login
+// 180 frames = 3 seconds
+auto_start_delay_max = 180;
+auto_start_timer = auto_start_delay_max;
 
 // [NEW] Spawn the Custom Mouse
 if (!instance_exists(obj_cursor_manager)) {

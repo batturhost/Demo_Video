@@ -1,50 +1,44 @@
 // --- Step Event ---
 
-// We only want the buttons to work after the text is finished
-if (current_line < array_length(text_lines)) {
-    btn_hovering = false;
-    btn_continue_hovering = false;
-    exit;
-}
-
 var _mx = device_mouse_x_to_gui(0);
 var _my = device_mouse_y_to_gui(0);
+var _click = mouse_check_button_pressed(mb_left);
 
-// Check for button hover (DEBUG)
-btn_hovering = point_in_box(_mx, _my, btn_x1, btn_y1, btn_x2, btn_y2);
-
-// Check for button hover (CONTINUE)
-btn_continue_hovering = point_in_box(_mx, _my, btn_continue_x1, btn_continue_y1, btn_continue_x2, btn_continue_y2);
-
-// Check for button click (DEBUG)
-if (btn_hovering && mouse_check_button_pressed(mb_left)) {
-    room_goto(rm_hub);
-}
-
-// Check for button click (CONTINUE)
-if (btn_continue_hovering && mouse_check_button_pressed(mb_left)) {
+// Check if text scrolling is finished
+if (current_line >= array_length(text_lines)) {
     
-    var _loaded = false;
+    // 1. Button Logic (Reboot)
+    btn_reboot_hover = point_in_rectangle(_mx, _my, btn_reboot_x1, btn_reboot_y1, btn_reboot_x2, btn_reboot_y2);
     
-    // Only try to load if the system is enabled
-    if (global.ENABLE_SAVE_SYSTEM) {
-        _loaded = load_game();
+    if (btn_reboot_hover && _click) {
+        // REBOOT SEQUENCE
+        play_ui_click();
+        
+        // Reset Text
+        current_line = 0;
+        alarm[0] = text_speed;
+        
+        // Reset Auto-Start Timer
+        auto_start_timer = auto_start_delay_max;
+        
+        // Exit early so we don't trigger the room transition below
+        exit; 
     }
     
-    if (_loaded) {
-        // Save found -> Go to Login Screen
-        room_goto(rm_login); 
+    // 2. Auto-Transition Logic (The Default)
+    if (auto_start_timer > 0) {
+        auto_start_timer--;
     } else {
-        // System Disabled OR No Save -> Go to Installer
-        room_goto(rm_installer_start);
+        // Timer finished -> Go to Login Screen
+        room_goto(rm_login);
     }
+} else {
+    // Text is still scrolling, no interactions
+    btn_reboot_hover = false;
 }
 
-// --- NEW: SPACEBAR SHORTCUT (FIXED) ---
+// --- SPACEBAR SHORTCUT (Debug Override) ---
 if (keyboard_check_pressed(vk_space)) {
-    // 1. Set a global flag telling the Hub to open the debugger
     global.open_debug_battle = true;
-    
-    // 2. Go to the hub
     room_goto(rm_hub);
 }
