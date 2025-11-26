@@ -26,8 +26,8 @@ if (global.glitch_event_stage == 3 && global.glitch_timer <= 0) {
     global.unread_messages = [];
 
     array_push(global.unread_messages, { from: "Skater_X", message: "Yo! Are you online?" });
-    array_push(global.unread_messages, { from: "Skater_X", message: "Whatever you do, DONT click that popup" });
-    array_push(global.unread_messages, { from: "Skater_X", message: "It's not a real critter. It's a virus." });
+    array_push(global.unread_messages, { from: "Skater_X", message: "Whatever you do DONT click the popup" });
+    array_push(global.unread_messages, { from: "Skater_X", message: "It's not a real criter it's a virus." });
     array_push(global.unread_messages, { from: "Skater_X", message: "It overwrites your whole save file!!" });
     array_push(global.unread_messages, { from: "Skater_X", message: "Dude? You there?" });
 
