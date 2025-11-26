@@ -18,6 +18,7 @@
     {"name":"obj_debug_battle_setup","order":21,"path":"objects/obj_debug_battle_setup/obj_debug_battle_setup.yy",},
     {"name":"obj_enemy_critter","order":9,"path":"objects/obj_enemy_critter/obj_enemy_critter.yy",},
     {"name":"obj_Game_Logic","order":10,"path":"objects/obj_Game_Logic/obj_Game_Logic.yy",},
+    {"name":"obj_glitch_effect","order":28,"path":"objects/obj_glitch_effect/obj_glitch_effect.yy",},
     {"name":"obj_hub_manager","order":3,"path":"objects/obj_hub_manager/obj_hub_manager.yy",},
     {"name":"obj_icon_bestiary","order":4,"path":"objects/obj_icon_bestiary/obj_icon_bestiary.yy",},
     {"name":"obj_icon_browser","order":5,"path":"objects/obj_icon_browser/obj_icon_browser.yy",},

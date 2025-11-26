@@ -1,5 +1,53 @@
 // --- Step Event ---
 
+// --- GLITCH EVENT: THE LATE WARNING ---
+if (variable_global_exists("glitch_download_delay") && global.glitch_download_delay > 0) {
+    global.glitch_download_delay--;
+    
+    // When timer hits 1 (approx 2 seconds after battle close)
+    if (global.glitch_download_delay == 1) {
+        
+        // 1. Inject "Too Late" Messages from a NEW CONTACT
+        if (!variable_global_exists("unread_messages")) global.unread_messages = [];
+        
+        // Clear old messages to focus on these
+        global.unread_messages = [];
+
+        // 90s Screenname: Skater_X
+        array_push(global.unread_messages, { 
+            from: "Skater_X", 
+            message: "Yo! Are you online?" 
+        });
+        array_push(global.unread_messages, { 
+            from: "Skater_X", 
+            message: "DONT click that popup ad on browser!" 
+        });
+        array_push(global.unread_messages, { 
+            from: "Skater_X", 
+            message: "It's not real. It's a virus." 
+        });
+        array_push(global.unread_messages, { 
+            from: "Skater_X", 
+            message: "It overwrites your whole save file!!" 
+        });
+        array_push(global.unread_messages, { 
+            from: "Skater_X", 
+            message: "Dude? You there?" 
+        });
+
+        // 2. Play normal notification sound (It's just a friend messaging you)
+        if (audio_exists(snd_ui_chime)) {
+            audio_play_sound(snd_ui_chime, 10, false);
+        }
+        
+        // 3. Force the Icon to Blink
+        if (instance_exists(obj_messenger_icon)) {
+            obj_messenger_icon.visible = true;
+            obj_messenger_icon.is_blinking = true;
+        }
+    }
+}
+
 // --- NEW: GLITCH DOWNLOAD TIMER ---
 if (variable_global_exists("glitch_download_delay") && global.glitch_download_delay > 0) {
     global.glitch_download_delay--;

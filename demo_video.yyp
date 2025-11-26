@@ -40,6 +40,7 @@
     {"id":{"name":"obj_debug_battle_setup","path":"objects/obj_debug_battle_setup/obj_debug_battle_setup.yy",},},
     {"id":{"name":"obj_enemy_critter","path":"objects/obj_enemy_critter/obj_enemy_critter.yy",},},
     {"id":{"name":"obj_Game_Logic","path":"objects/obj_Game_Logic/obj_Game_Logic.yy",},},
+    {"id":{"name":"obj_glitch_effect","path":"objects/obj_glitch_effect/obj_glitch_effect.yy",},},
     {"id":{"name":"obj_hub_manager","path":"objects/obj_hub_manager/obj_hub_manager.yy",},},
     {"id":{"name":"obj_icon_bestiary","path":"objects/obj_icon_bestiary/obj_icon_bestiary.yy",},},
     {"id":{"name":"obj_icon_browser","path":"objects/obj_icon_browser/obj_icon_browser.yy",},},

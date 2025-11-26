@@ -4,7 +4,7 @@ draw_set_font(fnt_vga);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
-// 1. INHERIT PARENT (Draws background/frame)
+// 1. INHERIT PARENT
 event_inherited();
 
 // 2. Menu Bar
@@ -24,6 +24,7 @@ var _xp_blue_dark = make_color_rgb(0, 80, 180);
 gpu_set_scissor(buddy_list_x + 2, buddy_list_y + 2, buddy_list_w - 4, buddy_list_h - 4);
 for (var i = 0; i < array_length(contact_list); i++) {
     var _y = buddy_list_y + 2 + (i * contact_item_height);
+    
     if (i == selected_contact_index) {
         draw_set_color(_xp_blue_dark);
         draw_rectangle(buddy_list_x + 2, _y, buddy_list_x + buddy_list_w - 2, _y + contact_item_height, false);
@@ -41,14 +42,19 @@ draw_rectangle(chat_area_x, chat_area_y, chat_area_x + chat_area_w, chat_area_y 
 draw_border_95(chat_area_x, chat_area_y, chat_area_x + chat_area_w, chat_area_y + chat_area_h, "sunken");
 
 gpu_set_scissor(chat_area_x + 2, chat_area_y + 2, chat_area_w - 4, chat_area_h - 4);
+
 var _log = chat_logs[$ selected_contact_name];
 if (!is_undefined(_log)) {
     var _draw_y = chat_area_y + 5;
-    draw_set_color(c_black);
-    for (var i = 0; i < array_length(_log); i++) {
+    
+    // --- UPDATED LOOP: DRAW ONLY VISIBLE MESSAGES ---
+    var _count = min(visible_message_count, array_length(_log));
+    
+    for (var i = 0; i < _count; i++) {
         var _msg = _log[i];
         var _sender = selected_contact_name; 
         
+        // Draw Sender Name
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_xp_blue_dark);
@@ -56,10 +62,21 @@ if (!is_undefined(_log)) {
         draw_text(chat_area_x + 5, _draw_y, _sender + " says:");
         draw_set_font(fnt_vga); 
         
-        _draw_y += 20;
+        // Move down by the height of the sender line (approx 22px)
+        _draw_y += 22; 
+        
+        // Draw Message Body
         draw_set_color(c_black);
-        var _height = draw_text_ext(chat_area_x + 10, _draw_y, _msg, msg_line_height, chat_area_w - 20);
+        
+        // Calculate height dynamically based on width
+        var _text_w = chat_area_w - 30; 
+        var _height = draw_text_ext(chat_area_x + 10, _draw_y, _msg, msg_line_height, _text_w);
+        
+        // Safety check
         if (!is_real(_height)) _height = 20;
+        
+        // [FIX] DYNAMIC SPACING
+        // Add height of the text block + 10px padding for the next message
         _draw_y += _height + 10;
     }
 }

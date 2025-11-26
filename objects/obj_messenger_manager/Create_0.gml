@@ -26,7 +26,7 @@ toolbar_h = 25;
 buddy_list_x = window_x1 + 10;
 buddy_list_y = toolbar_y1 + toolbar_h + 10; 
 buddy_list_w = 180;
-buddy_list_h = window_height - (buddy_list_y - window_y1) - 20; 
+buddy_list_h = window_height - (buddy_list_y - window_y1) - 20;
 
 chat_area_x = buddy_list_x + buddy_list_w + 10;
 chat_area_y = buddy_list_y; 
@@ -72,9 +72,18 @@ for (var i = 0; i < array_length(global.unread_messages); i++) {
     }
     array_push(chat_logs[$ _sender], _message);
 }
-global.unread_messages = [];
+global.unread_messages = []; // Clear global queue
 
 selected_contact_index = 0;
 selected_contact_name = contact_list[0];
+
 contact_item_height = 24; 
-msg_line_height = 20;
+msg_line_height = 22; 
+
+// --- NEW: MESSAGE REVEAL LOGIC ---
+visible_message_count = 0; 
+message_reveal_timer = 30; 
+last_selected_index = -1; 
+
+// Flag to ensure we only spawn the glitch object once
+cliffhanger_triggered = false;
