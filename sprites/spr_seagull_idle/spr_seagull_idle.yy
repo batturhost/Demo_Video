@@ -70,7 +70,7 @@
   ],
   "name":"spr_seagull_idle",
   "nineSlice":null,
-  "origin":7,
+  "origin":4,
   "parent":{
     "name":"Sprites",
     "path":"folders/Sprites.yy",
@@ -264,7 +264,7 @@
     "visibleRange":null,
     "volume":1.0,
     "xorigin":256,
-    "yorigin":460,
+    "yorigin":230,
   },
   "swatchColours":null,
   "swfPrecision":0.5,
